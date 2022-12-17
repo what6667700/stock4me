@@ -1,8 +1,11 @@
-# -*- coding: utf-8 -*-
+# coding=utf-8
 
 import random
-import urllib3
+import re
+import urllib.request
+import time
 import datetime
+from bs4 import BeautifulSoup
 from pymongo import MongoClient
 
 client = MongoClient('mongodb://127.0.0.1:27017/')
@@ -21,10 +24,11 @@ def getRequest(url):
         "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:10.0) Gecko/20100101 Firefox/10.0 ",
     ]
     agent = random.choice(user_agents)
-    http = urllib3.PoolManager(num_pools=5, headers={'User-Agent':agent,'Host':'quotes.money.163.com','Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'})
-
-    response = http.request('GET', url)
-    return response.data.decode(encoding='UTF-8',errors='ignore')
+    request = urllib.request.Request(url)
+    request.add_header('User-Agent', agent)
+    request.add_header('Host', 'quotes.money.163.com')
+    request.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+    return request
 
 
 
@@ -60,13 +64,14 @@ def updateDate(startTime,endTime):
     count=0
     for codes in db.stockCode.find():
         if startTime != 0 and endTime != 0:
-            dataUrl = getDataUrl((codes.get('SYMBOL')),startTime,endTime)
+            dataUrl = getDataUrl(codes.get('CODE'),startTime,endTime)
         else:
-            dataUrl = getStockCodeDataUrl(codes.get('SYMBOL'))
+            dataUrl = getStockCodeDataUrl(codes.get('CODE'))
         print(dataUrl)
 
         try:
-            resultR = getRequest(dataUrl)
+            dataRep = urllib.request.urlopen(getRequest(dataUrl), timeout=10)
+            resultR = dataRep.read().decode('gbk')
         except Exception as e:
             timeOutCodes.append(codes)
             print(str(e))
@@ -112,7 +117,8 @@ def updateDate(startTime,endTime):
             #     "TCAP": float(gupiao[13]) if gupiao[13] != "None" else None,
             #     "MCAP": float(gupiao[14]) if gupiao[14] != "None" else None
             # }
-            # db.stock.update({"TIME": datetime.datetime.strptime(gupiao[0], '%Y-%m-%d'), "CODE": gupiao[1].split("\'")[1].encode('utf-8')}, {"$setOnInsert": stock}, upsert=True)
+            # db.stock.update({"TIME": datetime.datetime.strptime(gupiao[0], '%Y-%m-%d'),
+            #                  "CODE": gupiao[1].split("\'")[1].encode('utf-8')}, {"$setOnInsert": stock}, upsert=True)
             # print(stock)
     print(count)
     if timeOutCodes:
@@ -121,5 +127,8 @@ def updateDate(startTime,endTime):
 
 
 if __name__ == '__main__':
-    date = datetime.datetime.now().strftime('%Y%m%d')
-    updateDate("20211113",date)
+    date = datetime.datetime.now().strftime("%Y%m%d")
+    print(date)
+    updateDate('20220610',date)
+    # print(date)
+    # print(datetime.datetime.now())

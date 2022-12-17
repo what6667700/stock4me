@@ -6,18 +6,19 @@
 import math
 import pandas as pd
 import numpy as np
+from apscheduler.schedulers.blocking import BlockingScheduler
 import tushare as ts
 import datetime
 import stockstats
 import pymongo
 import json
+import baostock as bs
 import pandas as pd
 import time
 
-from src.main import bs
-
 print(ts.__version__)
-
+# 30abde40af1725d6670ea349b624e31bbf8a50022c25de8ec9da4f53 -
+# 82214039a3bfd40645b630b18a46151509f4a4bbde00dbbd60ee3585 - Gary
 ts.set_token('82214039a3bfd40645b630b18a46151509f4a4bbde00dbbd60ee3585')
 
 
@@ -31,7 +32,7 @@ def get_kdj_by_stock_code(begin_time, end_time, stock_code):
 
     print(code_str)
     # stock = ts.get_hist_data(code_str, start=begin_time, end=end_time)
-    time.sleep(0.005)
+    # time.sleep(0.005)
     pro = ts.pro_api()
     stock = pro.daily(ts_code=code_str, start_date=begin_time, end_date=end_time)
 
@@ -74,7 +75,7 @@ def get_kdj_by_stock_code(begin_time, end_time, stock_code):
                  'macd', 'macds', 'macdh', 'boll', 'boll_ub', 'boll_lb']]
             # print(stockStat)
             dftransform = df1.fillna(value=0)
-            db.stkdj.insert_many(json.loads(dftransform.T.to_json()).values())
+            db.stkdj.insert(json.loads(dftransform.T.to_json()).values())
     # print(type(stockStat[['stockcode', 'kdjk', 'kdjd', 'kdjj']]))
     # db.cftest.insert(json.loads(stockStat.to_json(orient='records')))
     # print("init finish .")
@@ -124,7 +125,7 @@ db = myclient['test8']
 
 def get_kdj():
     # print 123
-    # db.stkdj.drop();
+    db.stkdj.drop();
     startdate = '19901201'
     today = datetime.datetime.now()
     delta = datetime.timedelta(days=1)
@@ -137,22 +138,31 @@ def get_kdj():
         # code_str = str(code, encoding="utf8")
 
 
-        code_str = code
-        if code_str[0:2] == "00" or code_str[0:2] == "30":
-            code_str = code_str + ".SZ"
-        else:
-            code_str = code_str + ".SH"
-
-        search_set = db.stkdj
-        if search_set.find_one({"ts_code":code_str}) == None:
+        # code_str = code
+        # if code_str[0:2] == "00" or code_str[0:2] == "30":
+        #     code_str = code_str + ".SZ"
+        # else:
+        #     code_str = code_str + ".SH"
+        #
+        # search_set = db.stkdj
+        # if search_set.find_one({"ts_code":code_str}) == None:
            get_kdj_by_stock_code(startdate, strpredate, code)
-        else:
-           continue
+        # else:
+        #    continue
 
+
+           # print(code+" exits!!!")
+
+    # db.stkdj.remove({"boll_ub": None})Å
+    # db.stkdj.remove({"cci": None})
+    # db.stkdj.remove({"cci_20": None})
+    # db.stkdj.remove({"rsi_6": None})
+    # db.stkdj.remove({"rsi_12": None})
 
 
 def jobIndex():
     get_kdj()
+    # print("adf")
 
 jobIndex()
 #

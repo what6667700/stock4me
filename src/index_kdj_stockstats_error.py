@@ -2,18 +2,17 @@
 # 开始计算。以平安银行为例：
 # !/usr/local/bin/python
 # -*- coding: utf-8 -*-
-# 先创建索引db.getCollection('stkdj').createIndex({"ts_code":1})
 
 import math
 import pandas as pd
 import numpy as np
-# from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.blocking import BlockingScheduler
 import tushare as ts
 import datetime
 import stockstats
 import pymongo
 import json
-# import baostock as bs
+import baostock as bs
 import pandas as pd
 import time
 
@@ -25,14 +24,14 @@ ts.set_token('82214039a3bfd40645b630b18a46151509f4a4bbde00dbbd60ee3585')
 def get_kdj_by_stock_code(begin_time, end_time, stock_code):
     code_str = stock_code
     # code_str = str(stock_code, encoding="utf8")
-    if code_str[0:2] == "00" or code_str[0:2] == "30":
+    if code_str[0:3] == "000" or code_str[0:3] == "002" or code_str[0:3] == "300":
         code_str = code_str + ".SZ"
     else:
         code_str = code_str + ".SH"
 
     print(code_str)
     # stock = ts.get_hist_data(code_str, start=begin_time, end=end_time)
-    time.sleep(0.005)
+    # time.sleep(0.005)
     pro = ts.pro_api()
     stock = pro.daily(ts_code=code_str, start_date=begin_time, end_date=end_time)
 
@@ -75,7 +74,7 @@ def get_kdj_by_stock_code(begin_time, end_time, stock_code):
                  'macd', 'macds', 'macdh', 'boll', 'boll_ub', 'boll_lb']]
             # print(stockStat)
             dftransform = df1.fillna(value=0)
-            db.stkdj.insert_many(json.loads(dftransform.T.to_json()).values())
+            db.stkdj.insert(json.loads(dftransform.T.to_json()).values())
     # print(type(stockStat[['stockcode', 'kdjk', 'kdjd', 'kdjj']]))
     # db.cftest.insert(json.loads(stockStat.to_json(orient='records')))
     # print("init finish .")
@@ -139,7 +138,7 @@ def get_kdj():
 
 
         code_str = code
-        if code_str[0:3] == "000" or code_str[0:3] == "002" or code_str[0:3] == "300":
+        if code_str[0:2] == "00" or code_str[0:2] == "30":
             code_str = code_str + ".SZ"
         else:
             code_str = code_str + ".SH"
@@ -150,10 +149,22 @@ def get_kdj():
         else:
            continue
 
+
+           # print(code+" exits!!!")
+
+    # db.stkdj.remove({"boll_ub": None})Å
+    # db.stkdj.remove({"cci": None})
+    # db.stkdj.remove({"cci_20": None})
+    # db.stkdj.remove({"rsi_6": None})
+    # db.stkdj.remove({"rsi_12": None})
+
+
 def jobIndex():
     get_kdj()
+    # print("adf")
 
 jobIndex()
+#
 # scheduler = BlockingScheduler()
 # scheduler.add_job(jobIndex, "cron", day_of_week="1-5", hour=17, minute=40, misfire_grace_time=3600)
 # scheduler.start()
